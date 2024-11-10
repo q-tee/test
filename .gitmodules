@@ -1,0 +1,9 @@
+[submodule "dependencies/q-tee/common"]
+	path = dependencies/q-tee/common
+	url = https://github.com/q-tee/common
+[submodule "dependencies/q-tee/crt"]
+	path = dependencies/q-tee/crt
+	url = https://github.com/q-tee/crt
+[submodule "dependencies/q-tee/hash"]
+	path = dependencies/q-tee/hash
+	url = https://github.com/q-tee/hash
