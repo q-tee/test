@@ -97,11 +97,11 @@ namespace UNIT::CRT
 		CUnitTest stringToDoubleError("CRT/CVT/ATOD/ERRN");
 		for (const auto szNumber : arrFloatStrings)
 		{
-			errno_t iResultErrno = 0;
+			int iResultErrno = 0;
 			const double dlResult = ::CRT::StringToReal<double>(szNumber, static_cast<char**>(nullptr), &iResultErrno);
 			errno = 0;
 			const double dlExpect = ::strtod(szNumber, nullptr);
-			const errno_t iExpectErrno = errno;
+			const int iExpectErrno = errno;
 			stringToDouble.Add(szNumber, dlResult, dlExpect);
 			stringToDoubleError.Add(szNumber, iResultErrno, iExpectErrno);
 		}
@@ -112,11 +112,11 @@ namespace UNIT::CRT
 		CUnitTest stringToFloatError("CRT/CVT/ATOF/ERRN");
 		for (const auto szNumber : arrFloatStrings)
 		{
-			errno_t iResultErrno = 0;
+			int iResultErrno = 0;
 			const float flResult = ::CRT::StringToReal<float>(szNumber, static_cast<char**>(nullptr), &iResultErrno);
 			errno = 0;
 			const float flExpect = ::strtof(szNumber, nullptr);
-			const errno_t iExpectErrno = errno;
+			const int iExpectErrno = errno;
 			stringToFloat.Add(szNumber, flResult, flExpect);
 			stringToFloatError.Add(szNumber, iResultErrno, iExpectErrno);
 		}
