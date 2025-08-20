@@ -1,12 +1,14 @@
 ﻿#include <q-tee/common/common.h>
 
-#include <iomanip>
 #ifdef Q_OS_WINDOWS
+#define _CRT_SECURE_NO_WARNINGS
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
 #endif
+#include <iomanip>
 
 #include "units/crt.h"
 #include "units/hash.h"

@@ -56,7 +56,7 @@ namespace UNIT::CRT
 		char szIntegerExpectBuffer[::CRT::IntegerToString_t<std::uint64_t, 2U>::MaxCount()];
 		for (const auto iNumber : arrIntegerNumbers)
 		{
-			::sprintf_s(szIntegerExpectBuffer, "%d", iNumber);
+			::sprintf(szIntegerExpectBuffer, "%d", iNumber);
 			integerToString.Add(iNumber, ::CRT::IntegerToString<std::int32_t>(iNumber, szIntegerResultBuffer, Q_ARRAYSIZE(szIntegerResultBuffer)), static_cast<char*>(szIntegerExpectBuffer));
 		}
 		test.Add(integerToString.Report(), true);
@@ -168,7 +168,7 @@ namespace UNIT::CRT
 		{
 			for (int iPrecision = 0; iPrecision < std::numeric_limits<double>::max_digits10; ++iPrecision)
 			{
-				::sprintf_s(szFloatExpectBuffer, "%.*f", iPrecision, dlNumber);
+				::sprintf(szFloatExpectBuffer, "%.*f", iPrecision, dlNumber);
 				doubleToString.Add(dlNumber, ::CRT::RealToString<double>(dlNumber, szFloatResultBuffer, Q_ARRAYSIZE(szFloatResultBuffer), iPrecision), static_cast<char*>(szFloatExpectBuffer));
 			}
 		}
@@ -180,7 +180,7 @@ namespace UNIT::CRT
 			for (int iPrecision = 0; iPrecision < std::numeric_limits<double>::max_digits10; ++iPrecision)
 			{
 				// convert number to string
-				::sprintf_s(szFloatExpectBuffer, "%.*f", iPrecision, dlNumber);
+				::sprintf(szFloatExpectBuffer, "%.*f", iPrecision, dlNumber);
 				const char* szFloatResult = ::CRT::RealToString<double>(dlNumber, szFloatResultBuffer, Q_ARRAYSIZE(szFloatResultBuffer), iPrecision);
 
 				// check if we do produce bit-equivalent value
@@ -236,7 +236,7 @@ namespace UNIT::CRT
 		{
 			for (int iPrecision = 0; iPrecision < std::numeric_limits<float>::max_digits10; ++iPrecision)
 			{
-				::sprintf_s(szFloatExpectBuffer, "%.*f", iPrecision, flNumber);
+				::sprintf(szFloatExpectBuffer, "%.*f", iPrecision, flNumber);
 				floatToString.Add(flNumber, ::CRT::RealToString<float>(flNumber, szFloatResultBuffer, Q_ARRAYSIZE(szFloatResultBuffer), iPrecision), static_cast<char*>(szFloatExpectBuffer));
 			}
 		}
@@ -248,7 +248,7 @@ namespace UNIT::CRT
 			for (int iPrecision = 0; iPrecision < std::numeric_limits<float>::max_digits10; ++iPrecision)
 			{
 				// convert number to string
-				::sprintf_s(szFloatExpectBuffer, "%.*f", iPrecision, flNumber);
+				::sprintf(szFloatExpectBuffer, "%.*f", iPrecision, flNumber);
 				const char* szFloatResult = ::CRT::RealToString<float>(flNumber, szFloatResultBuffer, Q_ARRAYSIZE(szFloatResultBuffer), iPrecision);
 
 				// check if we do produce bit-equivalent value
