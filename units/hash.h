@@ -137,10 +137,10 @@ namespace UNIT::HASH
 		CUnitTest test("HASH/RT");
 
 		for (const auto& [szSource, fnHash, uSeed, uExpected] : arrHash32)
-			test.Add(szSource, fnHash(szSource, uSeed), uExpected);
+			test.Equal(szSource, fnHash(szSource, uSeed), uExpected);
 
 		for (const auto& [szSource, fnHash, ullSeed, ullExpected] : arrHash64)
-			test.Add(szSource, fnHash(szSource, ullSeed), ullExpected);
+			test.Equal(szSource, fnHash(szSource, ullSeed), ullExpected);
 
 		return test.Report();
 	}

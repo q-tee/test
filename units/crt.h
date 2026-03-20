@@ -9,6 +9,7 @@
 #define Q_CRT_STRING_FORMAT
 #include <q-tee/crt/crt.h>
 
+#include <cinttypes>
 #include <numbers>
 
 #include "../unit.h"
@@ -40,8 +41,8 @@ namespace UNIT::CRT
 		// @todo: we must also validate "errno" value
 		CUnitTest stringToInteger("CRT/CVT/ATOI");
 		for (const auto szNumber : arrIntegerStrings)
-			stringToInteger.Add(szNumber, ::CRT::StringToInteger<long>(szNumber), ::strtol(szNumber, nullptr, 10));
-		test.Add(stringToInteger.Report(), true);
+			stringToInteger.Equal(szNumber, ::CRT::StringToInteger<long>(szNumber), ::strtol(szNumber, nullptr, 10));
+		test.Equal(stringToInteger.Report(), true);
 
 		CUnitTest integerToString("CRT/CVT/ITOA");
 		constexpr std::int32_t arrIntegerNumbers[] =
@@ -56,10 +57,10 @@ namespace UNIT::CRT
 		char szIntegerExpectBuffer[::CRT::IntegerToString_t<std::uint64_t, 2U>::MaxCount()];
 		for (const auto iNumber : arrIntegerNumbers)
 		{
-			::sprintf(szIntegerExpectBuffer, "%d", iNumber);
-			integerToString.Add(iNumber, ::CRT::IntegerToString<std::int32_t>(iNumber, szIntegerResultBuffer, Q_ARRAYSIZE(szIntegerResultBuffer)), static_cast<char*>(szIntegerExpectBuffer));
+			::sprintf(szIntegerExpectBuffer, "%" PRId32, iNumber);
+			integerToString.EqualString(iNumber, ::CRT::IntegerToString<std::int32_t>(iNumber, szIntegerResultBuffer, Q_ARRAYSIZE(szIntegerResultBuffer)), static_cast<char*>(szIntegerExpectBuffer));
 		}
-		test.Add(integerToString.Report(), true);
+		test.Add(integerToString);
 
 		constexpr const char* arrFloatStrings[] =
 		{
@@ -99,14 +100,16 @@ namespace UNIT::CRT
 		{
 			int iResultErrno = 0;
 			const double dlResult = ::CRT::StringToReal<double>(szNumber, static_cast<char**>(nullptr), &iResultErrno);
+
 			errno = 0;
 			const double dlExpect = ::strtod(szNumber, nullptr);
 			const int iExpectErrno = errno;
-			stringToDouble.Add(szNumber, dlResult, dlExpect);
-			stringToDoubleError.Add(szNumber, iResultErrno, iExpectErrno);
+
+			stringToDouble.Equal(szNumber, dlResult, dlExpect);
+			stringToDoubleError.Equal(szNumber, iResultErrno, iExpectErrno);
 		}
-		test.Add(stringToDouble.Report(), true);
-		test.Add(stringToDoubleError.Report(), true);
+		test.Add(stringToDouble);
+		test.Add(stringToDoubleError);
 
 		CUnitTest stringToFloat("CRT/CVT/ATOF");
 		CUnitTest stringToFloatError("CRT/CVT/ATOF/ERRN");
@@ -114,14 +117,16 @@ namespace UNIT::CRT
 		{
 			int iResultErrno = 0;
 			const float flResult = ::CRT::StringToReal<float>(szNumber, static_cast<char**>(nullptr), &iResultErrno);
+
 			errno = 0;
 			const float flExpect = ::strtof(szNumber, nullptr);
 			const int iExpectErrno = errno;
-			stringToFloat.Add(szNumber, flResult, flExpect);
-			stringToFloatError.Add(szNumber, iResultErrno, iExpectErrno);
+
+			stringToFloat.Equal(szNumber, flResult, flExpect);
+			stringToFloatError.Equal(szNumber, iResultErrno, iExpectErrno);
 		}
-		test.Add(stringToFloat.Report(), true);
-		test.Add(stringToFloatError.Report(), true);
+		test.Add(stringToFloat);
+		test.Add(stringToFloatError);
 
 		constexpr double arrDoubleNumbers[] =
 		{
@@ -169,10 +174,10 @@ namespace UNIT::CRT
 			for (int iPrecision = 0; iPrecision < std::numeric_limits<double>::max_digits10; ++iPrecision)
 			{
 				::sprintf(szFloatExpectBuffer, "%.*f", iPrecision, dlNumber);
-				doubleToString.Add(dlNumber, ::CRT::RealToString<double>(dlNumber, szFloatResultBuffer, Q_ARRAYSIZE(szFloatResultBuffer), iPrecision), static_cast<char*>(szFloatExpectBuffer));
+				doubleToString.EqualString(dlNumber, ::CRT::RealToString<double>(dlNumber, szFloatResultBuffer, Q_ARRAYSIZE(szFloatResultBuffer), iPrecision), static_cast<char*>(szFloatExpectBuffer));
 			}
 		}
-		test.Add(doubleToString.Report(), true);
+		test.Add(doubleToString);
 
 		CUnitTest stringToDoubleRoundTrip("CRT/CVT/DTOA/RNDTRP");
 		for (const double dlNumber : arrDoubleNumbers)
@@ -184,10 +189,10 @@ namespace UNIT::CRT
 				const char* szFloatResult = ::CRT::RealToString<double>(dlNumber, szFloatResultBuffer, Q_ARRAYSIZE(szFloatResultBuffer), iPrecision);
 
 				// check if we do produce bit-equivalent value
-				stringToDoubleRoundTrip.Add(dlNumber, ::strtod(szFloatResult, nullptr), ::strtod(szFloatExpectBuffer, nullptr));
+				stringToDoubleRoundTrip.Equal(dlNumber, ::strtod(szFloatResult, nullptr), ::strtod(szFloatExpectBuffer, nullptr));
 			}
 		}
-		test.Add(stringToDoubleRoundTrip.Report(), true);
+		test.Add(stringToDoubleRoundTrip);
 
 		constexpr float arrFloatNumbers[] =
 		{
@@ -237,10 +242,10 @@ namespace UNIT::CRT
 			for (int iPrecision = 0; iPrecision < std::numeric_limits<float>::max_digits10; ++iPrecision)
 			{
 				::sprintf(szFloatExpectBuffer, "%.*f", iPrecision, flNumber);
-				floatToString.Add(flNumber, ::CRT::RealToString<float>(flNumber, szFloatResultBuffer, Q_ARRAYSIZE(szFloatResultBuffer), iPrecision), static_cast<char*>(szFloatExpectBuffer));
+				floatToString.EqualString(flNumber, ::CRT::RealToString<float>(flNumber, szFloatResultBuffer, Q_ARRAYSIZE(szFloatResultBuffer), iPrecision), static_cast<char*>(szFloatExpectBuffer));
 			}
 		}
-		test.Add(floatToString.Report(), true);
+		test.Add(floatToString);
 
 		CUnitTest stringToFloatRoundTrip("CRT/CVT/FTOA/RNDTRP");
 		for (const float flNumber : arrFloatNumbers)
@@ -252,10 +257,10 @@ namespace UNIT::CRT
 				const char* szFloatResult = ::CRT::RealToString<float>(flNumber, szFloatResultBuffer, Q_ARRAYSIZE(szFloatResultBuffer), iPrecision);
 
 				// check if we do produce bit-equivalent value
-				stringToFloatRoundTrip.Add(flNumber, ::strtof(szFloatResult, nullptr), ::strtof(szFloatExpectBuffer, nullptr));
+				stringToFloatRoundTrip.Equal(flNumber, ::strtof(szFloatResult, nullptr), ::strtof(szFloatExpectBuffer, nullptr));
 			}
 		}
-		test.Add(stringToFloatRoundTrip.Report(), true);
+		test.Add(stringToFloatRoundTrip);
 
 		// January 15, 2024, Monday, 14:30:45
 		tm timePoint =
@@ -325,7 +330,7 @@ namespace UNIT::CRT
 		{
 			::CRT::TimeToString(szTimeResultBuffer, Q_ARRAYSIZE(szTimeResultBuffer), szTimeFormat, &timePoint);
 			::strftime(szTimeExpectBuffer, sizeof(szTimeExpectBuffer), szTimeFormat, &timePoint);
-			timeToString.Add(szTimeFormat, szTimeResultBuffer, szTimeExpectBuffer);
+			timeToString.EqualString(szTimeFormat, szTimeResultBuffer, szTimeExpectBuffer);
 		}
 
 		// add special cases
@@ -336,7 +341,7 @@ namespace UNIT::CRT
 		timePoint.tm_yday = 365;
 		::CRT::TimeToString(szTimeResultBuffer, Q_ARRAYSIZE(szTimeResultBuffer), "%j", &timePoint);
 		::strftime(szTimeExpectBuffer, sizeof(szTimeExpectBuffer), "%j", &timePoint);
-		timeToString.Add("last day of the year (%j)", szTimeResultBuffer, szTimeExpectBuffer);
+		timeToString.EqualString("last day of the year (%j)", szTimeResultBuffer, szTimeExpectBuffer);
 		// test for leap year day (Feb 29, 2024)
 		timePoint.tm_mday = 29;
 		timePoint.tm_mon = 1;
@@ -344,8 +349,8 @@ namespace UNIT::CRT
 		timePoint.tm_yday = 59;
 		::CRT::TimeToString(szTimeResultBuffer, Q_ARRAYSIZE(szTimeResultBuffer), "%B %d, %Y", &timePoint);
 		::strftime(szTimeExpectBuffer, sizeof(szTimeExpectBuffer), "%B %d, %Y", &timePoint);
-		timeToString.Add("day of the leap year (%B %d, %Y)", szTimeResultBuffer, szTimeExpectBuffer);
-		test.Add(timeToString.Report(), true);
+		timeToString.EqualString("day of the leap year (%B %d, %Y)", szTimeResultBuffer, szTimeExpectBuffer);
+		test.Add(timeToString);
 
 		// test for strict buffer size and return value
 		CUnitTest timeToStringReturn("CRT/CVT/TTOA/RET");
@@ -355,10 +360,10 @@ namespace UNIT::CRT
 		{
 			const std::size_t nTimeWrittenResult = ::CRT::TimeToString(szTimeResultBuffer, nSize, "%a %b %e %H:%M:%S %Y", &timePoint);
 			const std::size_t nTimeWrittenExpect = ::strftime(szTimeExpectBuffer, nSize, "%a %b %e %H:%M:%S %Y", &timePoint);
-			timeToStringReturn.Add("strict buffer return (%a %b %e %H:%M:%S %Y)", nTimeWrittenResult, nTimeWrittenExpect);
-			timeToStringReturn.Add("strict buffer (%a %b %e %H:%M:%S %Y)", static_cast<int>(szTimeResultBuffer[nSize]), static_cast<int>(szTimeExpectBuffer[nSize]));
+			timeToStringReturn.Equal("strict buffer return (%a %b %e %H:%M:%S %Y)", nTimeWrittenResult, nTimeWrittenExpect);
+			timeToStringReturn.Equal("strict buffer (%a %b %e %H:%M:%S %Y)", szTimeResultBuffer[nSize], szTimeExpectBuffer[nSize]);
 		}
-		test.Add(timeToStringReturn.Report(), true);
+		test.Add(timeToStringReturn);
 
 		return test.Report();
 	}
@@ -396,7 +401,7 @@ namespace UNIT::CRT
 			const int nGraph = ::isgraph(nCodePoint);
 			bResult &= ::CRT::IsGraph(nCodePoint) == (nGraph != 0);
 
-			test.Add(nCodePoint, bResult, true);
+			test.Equal(nCodePoint, bResult, true);
 		}
 
 		return test.Report();
@@ -438,7 +443,7 @@ namespace UNIT::CRT
 			//(nControl | nSpace | nBlank | nPunct | nDigit | nHex | nUpper | nLower | nAlpha | nAlNum | nPrint | nGraph) != 0
 
 			if (bResult)
-				test.Add(nCodePoint, bResult, true);
+				test.Equal(nCodePoint, bResult, true);
 			else
 			{
 				std::uint8_t uExpectedFlags = 0U;
@@ -462,9 +467,8 @@ namespace UNIT::CRT
 					uExpectedFlags |= ::CRT::TYPE_ALPHA;
 
 				const auto uFlags = ::CRT::arrWideCharacterTypeLUT[::CRT::arrWideCharacterTypeOffsets[nCodePoint >> 5U] + (nCodePoint & 0x1F)];
-				test.Add(nCodePoint, uFlags, uExpectedFlags);
+				test.Equal(nCodePoint, uFlags, uExpectedFlags);
 			}
-			
 		}
 
 		return test.Report();

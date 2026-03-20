@@ -28,13 +28,13 @@ int main()
 #endif
 
 	CUnitTest hash("HASH");
-	hash.Add(UNIT::HASH::Assert(), true);
-	hash.Add(UNIT::HASH::AssertConst(), true);
+	hash.Add(UNIT::HASH::Assert());
+	hash.Add(UNIT::HASH::AssertConst());
 	hash.Report();
 
 	CUnitTest crt("CRT");
-	crt.Add(UNIT::CRT::Assert(), true);
-	crt.Add(UNIT::CRT::AssertConst(), true);
+	crt.Add(UNIT::CRT::Assert());
+	crt.Add(UNIT::CRT::AssertConst());
 	crt.Report();
 	
 	return EXIT_SUCCESS;
