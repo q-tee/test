@@ -16,6 +16,265 @@
 
 namespace UNIT::CRT
 {
+	inline bool AssertMemory()
+	{
+		CUnitTest test("CRT/MEM");
+
+		{
+			CUnitTest compare("CRT/MEM/CMP");
+
+			// naive
+			const std::uint8_t arrNaiveLeft[] = "abcdef";
+			const std::uint8_t arrNaiveRight[] = "abcdez";
+			compare.Equal(::CRT::MemoryCompare(arrNaiveLeft, arrNaiveRight, 0), 0); // no size
+			compare.Equal(::CRT::MemoryCompare(arrNaiveLeft, arrNaiveRight, 5), 0); // exact match
+			compare.Equal(::CRT::MemoryCompare(arrNaiveRight, arrNaiveLeft, 5), 0); // exact match
+			compare.Equal(::CRT::MemoryCompare(arrNaiveLeft, arrNaiveRight, 6) < 0, true); // differs at N
+
+			// unsigned comparison
+			const std::uint8_t arrSignLeft[] = { 0xFF, 0x80 };
+			const std::uint8_t arrSignRight[] = { 0x01, 0x80 };
+			compare.Equal(::CRT::MemoryCompare(arrSignLeft, arrSignRight, 2) > 0, true);
+			compare.Equal(::CRT::MemoryCompare(arrSignRight, arrSignLeft, 2) < 0, true);
+
+			// chunk alignment
+			const char arrAlignNone[] = "AAAAAAAAAAAAAAAA"; // oword of 'A'
+			const char arrAlignStart[] = "BAAAAAAAAAAAAAAA"; // mismatch at index 0
+			const char arrAlignMiddle[] = "AAAAAAABAAAAAAAA"; // mismatch at index 7 (end of first 8-byte word)
+			const char arrAlignTrail[] = "AAAAAAAAAAAAAAAB"; // mismatch at index 15
+			// exact
+			compare.Equal(::CRT::MemoryCompare(arrAlignNone, arrAlignNone, 0), 0);
+			compare.Equal(::CRT::MemoryCompare(arrAlignNone, arrAlignNone, 16), 0);
+			// mismatch in the trailing byte
+			compare.Equal(::CRT::MemoryCompare(arrAlignNone, arrAlignTrail, 4), 0);
+			compare.Equal(::CRT::MemoryCompare(arrAlignNone, arrAlignTrail, 8), 0);
+			compare.Equal(::CRT::MemoryCompare(arrAlignNone, arrAlignTrail, 15), 0);
+			compare.Equal(::CRT::MemoryCompare(arrAlignNone, arrAlignTrail, 16) < 0, true);
+			// early chunk break
+			compare.Equal(::CRT::MemoryCompare(arrAlignNone, arrAlignStart, 16) < 0, true);
+			compare.Equal(::CRT::MemoryCompare(arrAlignNone, arrAlignMiddle, 16) < 0, true);
+
+			// large buffer
+			std::uint8_t arrLargeLeft[256];
+			std::uint8_t arrLargeRight[256];
+			for (int i = 0; i < 256; ++i)
+			{
+				arrLargeLeft[i] = i;
+				arrLargeRight[i] = i;
+			}
+			compare.Equal(::CRT::MemoryCompare(arrLargeLeft, arrLargeRight, 256), 0);
+			// last byte
+			arrLargeRight[255] = 0;
+			compare.Equal(::CRT::MemoryCompare(arrLargeLeft, arrLargeRight, 256) > 0, true);
+			arrLargeRight[255] = 255;
+			// 3rd 8-byte chunk
+			arrLargeRight[24] = 0;
+			compare.Equal(::CRT::MemoryCompare(arrLargeLeft, arrLargeRight, 256) > 0, true);
+
+			test.Add(compare);
+		}
+
+		{
+			CUnitTest search("CRT/MEM/CHR");
+
+			const char arrBuffer[] = "abcdef";
+			search.Equal(arrBuffer, ::CRT::MemoryChar(arrBuffer, 'a', 0), nullptr); // no size
+			search.Equal(arrBuffer, ::CRT::MemoryChar(arrBuffer, 'z', 6), nullptr); // not found
+			search.Equal(arrBuffer, ::CRT::MemoryChar(arrBuffer, 'f', 6), &arrBuffer[5]); // found at exact end
+
+			test.Add(search);
+		}
+
+		{
+			CUnitTest search("CRT/MEM/MEM");
+
+			// boundary matches
+			const char arrSource[] = "PREFIX_AND_SUFFIX";
+			search.Equal(::CRT::MemoryMemory(arrSource, 10, "PREFIX_AND", 10), arrSource); // search length is exactly equal to Source length
+			search.Equal(::CRT::MemoryMemory(arrSource, 10, "PREFIX_ANY", 10), nullptr); // last char differs
+			search.Equal(::CRT::MemoryMemory(arrSource, 17, "PRE", 3), &arrSource[0]); // exact match at the beginning
+			search.Equal(::CRT::MemoryMemory(arrSource + 7, 10, "FIX", 3), &arrSource[14]); // exact match at the very end
+			search.Equal(::CRT::MemoryMemory(arrSource, 16, "SUFFIX", 6), nullptr); // boundary limit
+			search.Equal(::CRT::MemoryMemory(arrSource, 10, "NONE", 0), nullptr); // search length is null @test: this is not POSIX compliant, even though FreeBSD behaviour is same
+			search.Equal(::CRT::MemoryMemory(arrSource, 0, "NONE", 0), nullptr); // source and search length is null @test: this is not POSIX compliant, even though FreeBSD behaviour is same
+			search.Equal(::CRT::MemoryMemory(arrSource, 3, "PREFIX", 6), nullptr); // search length is greater than source length
+			// false positive prefix recovery
+			const char arrSource1[] = "ababababc";
+			const char arrSearch1[] = "ababc";
+			search.Equal(::CRT::MemoryMemory(arrSource1, 9, arrSearch1, 5), &arrSource1[4]);
+			// overlapping sub-patterns
+			const char arrSource2[] = "AAAAA";
+			const char arrSearch2[] = "AAA";
+			search.Equal(::CRT::MemoryMemory(arrSource2, 5, arrSearch2, 3), &arrSource2[0]);
+			// binary data
+			const std::uint8_t arrSourceBin[] = { 0x01, 0x00, 0x02, 0x00, 0x03, 0x04 };
+			const std::uint8_t arrSearchBin[] = { 0x02, 0x00, 0x03 };
+			search.Equal(::CRT::MemoryMemory(arrSourceBin, 6, arrSearchBin, 3), &arrSourceBin[2]);
+			// searching for nulls specifically
+			const std::uint8_t arrSearchNull[] = { 0x00, 0x00 };
+			search.Equal(::CRT::MemoryMemory(arrSourceBin, 6, arrSearchNull, 2), nullptr); // doesn't exist contiguously
+
+			test.Add(search);
+		}
+
+		const std::size_t arrSizes[] = { 1, 2, 4, 8, 15, 16, 17, 31, 32 };
+		const std::size_t arrOffsets[] = { 0, 1, 3, 7, 15 };
+		const std::uint8_t arrValues[] = { 0x00, 0x7F, 0x80, 0xFE, 0xFF };
+
+		{
+			CUnitTest set("CRT/MEM/SET");
+
+			std::uint8_t arrBuffer[1024];
+			std::uint8_t arrCompare[1024];
+			
+			for (const auto& nSize : arrSizes)
+			{
+				for (const auto& nOffset : arrOffsets)
+				{
+					for (const auto& uValue : arrValues)
+					{
+						::memset(arrCompare, uValue, nSize);
+						set.Equal(::CRT::MemorySet(arrBuffer + nOffset, uValue, nSize), arrBuffer + nOffset + nSize);
+						set.Equal(::memcmp(arrBuffer + nOffset, arrCompare, nSize), 0);
+					}
+				}
+			}
+
+			::memset(arrBuffer, 0, 1024U);
+			::memset(arrCompare, 0, 1024U);
+
+			::memset(arrCompare, 0x77, 1003U);
+			set.Equal(::CRT::MemorySet(arrBuffer, 0x77, 1003U), arrBuffer + 1003U); // (62 SIMD blocks + qword + word + byte)
+			set.Equal(::memcmp(arrBuffer, arrCompare, 1024U), 0);
+
+			test.Add(set);
+		}
+
+		{
+			CUnitTest copy("CRT/MEM/CPY");
+
+			std::uint8_t arrBuffer[1024];
+			std::uint8_t arrCopy[1024];
+
+			std::size_t nPseudoCounter = 1U;
+			for (const auto& nSize : arrSizes)
+			{
+				nPseudoCounter *= nSize + 0x5A6B;
+
+				for (const auto& nOffset : arrOffsets)
+				{
+					nPseudoCounter += nOffset * 0xBF07;
+					
+					for (std::size_t i = 0U; i < nSize; ++i)
+					{
+						nPseudoCounter += i * 33U;
+
+						arrCopy[i] = nPseudoCounter & 0xFF;
+					}
+
+					copy.Equal(::CRT::MemoryCopy(arrBuffer + nOffset, arrCopy, nSize), arrBuffer + nOffset + nSize);
+					copy.Equal(::memcmp(arrBuffer + nOffset, arrCopy, nSize), 0);
+				}
+			}
+
+			::memset(arrBuffer, 0, 1024U);
+			::memset(arrCopy, 0, 1024U);
+			for (std::size_t i = 0U; i < 1003U; ++i)
+			{
+				nPseudoCounter += i * 0x8F2043E8;
+
+				arrCopy[i] = nPseudoCounter & 0xFF;
+			}
+			
+
+			copy.Equal(::CRT::MemoryCopy(arrBuffer, arrCopy, 1003U), arrBuffer + 1003U); // (62 SIMD blocks + qword + word + byte)
+			copy.Equal(::memcmp(arrBuffer, arrCopy, 1024U), 0);
+
+			test.Add(copy);
+		}
+
+		return test.Report();
+	}
+
+	inline bool AssertString()
+	{
+		CUnitTest test("CRT/STR");
+
+		{
+			CUnitTest length("CRT/STR/LEN");
+
+			alignas(8) char szAlignedBuffer[32];
+			::memset(szAlignedBuffer, 'A', 32U);
+
+			// perfectly aligned
+			szAlignedBuffer[0] = '\0';
+			length.Equal(::CRT::StringLength(szAlignedBuffer), 0U);
+			szAlignedBuffer[0] = 'A';
+			// misaligned by 1, null found during alignment
+			szAlignedBuffer[1] = '\0';
+			length.Equal(::CRT::StringLength(szAlignedBuffer), 1U);
+			szAlignedBuffer[1] = 'A';
+			// misaligned by 7, null found right before block loop
+			szAlignedBuffer[7] = '\0';
+			length.Equal(::CRT::StringLength(szAlignedBuffer), 7U);
+
+			// exact word boundaries
+			::memset(szAlignedBuffer, 'B', 32U);
+			// null is first byte of the second chunk
+			szAlignedBuffer[8] = '\0';
+			length.Equal(::CRT::StringLength(szAlignedBuffer), 8U);
+			szAlignedBuffer[8] = 'B';
+			// null is last byte of the second chunk
+			szAlignedBuffer[15] = '\0';
+			length.Equal(::CRT::StringLength(szAlignedBuffer), 15U);
+
+			alignas(1) char szUnalignedBufferPre[15];
+			alignas(1) char szUnalignedBuffer[15];
+			::memset(szUnalignedBufferPre, 0, 15U);
+			::memset(szUnalignedBuffer, 'U', 15U);
+
+			// terminate at index 0 (perfectly aligned)
+			szUnalignedBuffer[0] = '\0';
+			length.Equal(::CRT::StringLength(szUnalignedBuffer), 0U);
+			szUnalignedBuffer[0] = 'U';
+			// terminate at index 1 (misaligned by 1, null found during alignment)
+			szUnalignedBuffer[1] = '\0';
+			length.Equal(::CRT::StringLength(szUnalignedBuffer), 1U);
+			szUnalignedBuffer[1] = 'U';
+			// terminate at index 7 (misaligned by 7, null found right before block loop)
+			szUnalignedBuffer[7] = '\0';
+			length.Equal(::CRT::StringLength(szUnalignedBuffer), 7U);
+
+			// exact word boundaries
+			::memset(szUnalignedBuffer, 'B', 15U);
+			// null is first byte of the second chunk
+			szUnalignedBuffer[8] = '\0';
+			length.Equal(::CRT::StringLength(szUnalignedBuffer), 8U);
+			szUnalignedBuffer[8] = 'B';
+			// null is pre-last byte of the second chunk
+			szUnalignedBuffer[14] = '\0';
+			length.Equal(::CRT::StringLength(szUnalignedBuffer), 14U);
+
+			// high-bit / signed-char false zero trap
+			char arrHighBitBuffer[16] = "\x80\xFF\x7F\x01\x80\xFF\x7F\x01";
+			length.Equal(::CRT::StringLength(arrHighBitBuffer), 8U);
+
+			// consecutive nulls
+			char arrMultiNullBuffer[16] = "AAAAAAAAA\0\0\0"; // First block is solid
+			length.Equal(::CRT::StringLength(arrMultiNullBuffer), 9U);
+
+			// large string
+			char arrLargeBuffer[1024];
+			::memset(arrLargeBuffer, 'X', 1024);
+			arrLargeBuffer[1000] = '\0';
+			length.Equal(::CRT::StringLength(arrLargeBuffer), 1000);
+
+			test.Add(length);
+		}
+
+		return test.Report();
+	}
+
 	inline bool AssertConvert()
 	{
 		CUnitTest test("CRT/CVT");
@@ -477,6 +736,8 @@ namespace UNIT::CRT
 	inline bool Assert()
 	{
 		bool bResult = true;
+		bResult &= AssertMemory();
+		bResult &= AssertString();
 		bResult &= AssertConvert();
 		bResult &= AssertCharacterType();
 		bResult &= AssertWideCharacterType();
